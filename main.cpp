@@ -2,15 +2,21 @@
 #include <ESP8266WiFi.h>
 #include <ESP_Mail_Client.h>
 
-const String wifi_ssid = "";
-const String wifi_pass = "";
+/*
+  ToDo:
+    - Proper buttons
+    - Potentially take photo and cache it during first entrance, send if failed
+*/
+
+const String wifi_ssid = "Mom use this to print";
+const String wifi_pass = "SpaceRoses13";
 
 const String smtp_host = "smtp.gmail.com";
 const int smtp_port = 465;
-const String smtp_user = ""; // email to send from
-const String smtp_pass = ""; // password
+const String smtp_user = "ESP8266Securitie@gmail.com"; // email to send from
+const String smtp_pass = "Holl!234";                   // password
 
-const String smtp_send = ""; // email to send to
+const String smtp_send = "jarrodwardell@gmail.com"; // email to send to
 
 SMTPSession smtp;
 ESP_Mail_Session session;
@@ -40,6 +46,8 @@ int currentAttempts = 0;
 
 bool failedEntry = false;
 bool opened = true; // if the door is open or not
+
+bool armed = false;
 
 void connectWiFi()
 {
@@ -90,9 +98,11 @@ void resetEntry()
   inputAmount = 0;   // how many digits have been entered - could be replaced by getting length of inputDigits later
 }
 
-int getLength(int a) {
+int getLength(int a)
+{
   int length = 0;
-  while (a > 0) {
+  while (a > 0)
+  {
     a /= 10;
     length++;
   }
@@ -108,12 +118,12 @@ bool equalLength(int a, int b)
 
 void loop()
 {
-  if (counter % 1000 == 0)
+  /*if (counter % 1000 == 0)
     Serial.println(counter);
   if (counter % 1000 == 0)
-    Serial.println(requireCode);
+    Serial.println(requireCode);*/
 
-  if (counter <= requireCode)
+  if (counter <= requireCode && armed)
   { // enter a code now
     if (counter % 750 == 0)
       digitalWrite(redLight, LOW);
@@ -137,7 +147,7 @@ void loop()
       {
         digitalWrite(greenLight, LOW);
 
-        inputDigits = inputDigits*10 + lastInput; /* lastInput * pow(10, getLength(code) - inputAmount - 1);*/
+        inputDigits = inputDigits * 10 + lastInput; /* lastInput * pow(10, getLength(code) - inputAmount - 1);*/
         inputAmount++;
         lastInputTime = counter + debounce;
         Serial.println(inputDigits);
@@ -156,6 +166,7 @@ void loop()
         requireCode = 0;
         Serial.println("success");
         currentAttempts = 0;
+        armed = false;
       }
       else // failed input
       {
@@ -213,7 +224,12 @@ void loop()
     }
     resetEntry();
   }
-  else if (digitalRead(doorCheck) == HIGH && !opened)
+  else if (!armed && requireCode != 0 && counter > requireCode)
+  {
+    armed = true;
+    // if there's a beeper, put a tone here I guess!
+  }
+  else if (digitalRead(doorCheck) == HIGH && !opened && armed)
   { // trigger into entry mode
     resetEntry();
     requireCode = counter + openTime;
@@ -226,7 +242,64 @@ void loop()
   }
   else
   { // idle
-    digitalWrite(greenLight, HIGH);
+    if (!armed)
+    {
+      if (lastInput == 0 && lastInputTime <= counter)
+      {
+        digitalWrite(greenLight, HIGH);
+
+        if (!digitalRead(oneButton))
+          lastInput = 1;
+        if (!digitalRead(twoButton))
+          lastInput = 2;
+        if (!digitalRead(threeButton))
+          lastInput = 3;
+        if (!digitalRead(fourButton))
+          lastInput = 4;
+
+        if (lastInput != 0)
+        {
+          digitalWrite(greenLight, LOW);
+
+          inputDigits = inputDigits * 10 + lastInput; /* lastInput * pow(10, getLength(code) - inputAmount - 1);*/
+          inputAmount++;
+          lastInputTime = counter + debounce;
+          Serial.println(inputDigits);
+        }
+      }
+      else if (digitalRead(oneButton) && digitalRead(twoButton) && digitalRead(threeButton) && digitalRead(fourButton)) // reset input
+      {
+        lastInput = 0;
+      }
+
+      if (equalLength(inputDigits, code))
+      {
+        if (inputDigits == code) // success!
+        {
+          requireCode = counter + openTime;
+          resetEntry();
+        }
+        else // failed input
+        {
+          digitalWrite(redLight, LOW);
+          delay(500);
+          digitalWrite(redLight, HIGH);
+          delay(250);
+          digitalWrite(redLight, LOW);
+          delay(500);
+          digitalWrite(redLight, HIGH);
+          delay(250);
+          digitalWrite(redLight, LOW);
+          delay(500);
+          digitalWrite(redLight, HIGH);
+
+          resetEntry();
+        }
+      }
+    }
+
+    if (armed)
+      digitalWrite(greenLight, LOW);
 
     if (counter % 4500 == 0)
       digitalWrite(redLight, LOW);
