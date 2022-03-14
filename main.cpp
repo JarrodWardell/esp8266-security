@@ -8,15 +8,15 @@
     - Potentially take photo and cache it during first entrance, send if failed
 */
 
-const String wifi_ssid = "Mom use this to print";
-const String wifi_pass = "SpaceRoses13";
+const String wifi_ssid = "";
+const String wifi_pass = "";
 
-const String smtp_host = "smtp.gmail.com";
-const int smtp_port = 465;
-const String smtp_user = "ESP8266Securitie@gmail.com"; // email to send from
-const String smtp_pass = "Holl!234";                   // password
+const String smtp_host = "";
+const int smtp_port = ;
+const String smtp_user = ""; // email to send from
+const String smtp_pass = "";                   // password
 
-const String smtp_send = "jarrodwardell@gmail.com"; // email to send to
+const String smtp_send = ""; // email to send to
 
 SMTPSession smtp;
 ESP_Mail_Session session;
